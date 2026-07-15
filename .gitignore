@@ -1,0 +1,17 @@
+# Compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Environment variables (Crucial!)
+.env
+*.env
+config.json
+
+# Local IDE configurations
+.vscode/
+.idea/
