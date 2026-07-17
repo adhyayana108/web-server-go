@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Go Web Server</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: rgba(255,255,255,0.07);
+      --accent: #00e5a0;
+      --accent2: #7b61ff;
+      --text: #e8e8f0;
+      --muted: #666680;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /*GRID BACKGROUND*/
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* GLOW ORBS */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; right: -100px; animation: drift 12s ease-in-out infinite alternate; }
+    .orb-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; left: -100px; animation: drift 16s ease-in-out infinite alternate-reverse; }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(40px, 20px) scale(1.1); }
+    }
+
+    /* LAYOUT */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1.2rem 0;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(10, 10, 15, 0.7);
+    }
+    nav .wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /*  HERO  */
+    .hero {
+      padding: 7rem 0 5rem;
+      display: grid;
+      gap: 2rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 229, 160, 0.08);
+      border: 1px solid rgba(0, 229, 160, 0.2);
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 2rem;
+      width: fit-content;
+      animation: fadeUp 0.6s ease both;
+    }
+    .badge::before { content: '●'; font-size: 0.5rem; animation: blink 1.5s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    h1 span { color: var(--accent); }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--muted);
+      max-width: 55ch;
+      line-height: 1.7;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.6rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: #00ffb3; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,229,160,0.25); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* STATUS TERMINAL */
+    .terminal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeUp 0.6s 0.4s ease both;
+      margin-top: 1rem;
+    }
+    .terminal-bar {
+      background: rgba(255,255,255,0.04);
+      padding: 0.7rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #ffbd2e; }
+    .dot-g { background: #28c840; }
+    .terminal-title { margin-left: auto; font-size: 0.7rem; color: var(--muted); }
+
+    .terminal-body {
+      padding: 1.5rem;
+      font-size: 0.82rem;
+      line-height: 2;
+    }
+    .t-line { display: flex; gap: 0.75rem; }
+    .t-prompt { color: var(--accent); user-select: none; }
+    .t-cmd { color: var(--text); }
+    .t-out { color: var(--muted); padding-left: 1.5rem; }
+    .t-green { color: var(--accent); }
+    .t-purple { color: var(--accent2); }
+
+    /* ENDPOINTS GRID */
+    section { padding: 4rem 0; }
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: var(--font-head);
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 2.5rem;
+    }
+
+    .endpoints-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .endpoint-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      transition: all 0.25s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .endpoint-card:hover {
+      border-color: rgba(0,229,160,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+    .method-badge {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+    }
+    .get  { background: rgba(0,229,160,0.12); color: var(--accent); }
+    .post { background: rgba(123,97,255,0.15); color: var(--accent2); }
+
+    .endpoint-path {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .endpoint-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* FEATURES*/
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.6rem;
+    }
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .feature-name {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .feature-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.65; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer .wrapper { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+    .footer-text { font-size: 0.75rem; color: var(--muted); }
+
+    /* LIVE STATUS*/
+    #health-status {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #health-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: blink 1.5s step-end infinite; }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="wrapper">
+      <a class="nav-logo" href="/">go/server</a>
+      <ul class="nav-links">
+        <li><a href="#endpoints">Endpoints</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="/form.html">Form</a></li>
+        <li><a href="/api/health">Health</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <main>
+    <div class="wrapper">
+      <section class="hero">
+        <div class="badge">Server Running</div>
+
+        <h1>Go Web<br><span>Server.</span></h1>
+
+        <p class="subtitle">
+          A production-grade HTTP server built with Go's standard library.
+          Zero dependencies. Logging middleware. JSON API. Fully deployable.
+        </p>
+
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/form.html">→ Try the Form</a>
+          <a class="btn btn-outline" href="/api/health">API Health Check</a>
+        </div>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-r"></div>
+            <div class="dot dot-y"></div>
+            <div class="dot dot-g"></div>
+            <span class="terminal-title">bash — go-server</span>
+          </div>
+          <div class="terminal-body">
+            <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">go run main.go</span></div>
+            <div class="t-line t-out">┌─────────────────────────────────────────┐</div>
+            <div class="t-line t-out">│&nbsp; <span class="t-green">Go Web Server</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</div>
+            <div class="t-line t-out">│&nbsp; Listening on <span class="t-purple">http://localhost:8080</span>&nbsp;&nbsp;&nbsp;│</div>
+            <div class="t-line t-out">└─────────────────────────────────────────┘</div>
+            <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd" id="cursor">▋</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ENDPOINTS -->
+      <section id="endpoints">
+        <div class="section-label">API Reference</div>
+        <h2 class="section-title">Endpoints</h2>
+        <div class="endpoints-grid">
+          <a class="endpoint-card" href="/">
+            <div class="endpoint-header">
+              <span class="method-badge get">GET</span>
+              <span class="endpoint-path">/</span>
+            </div>
+            <p class="endpoint-desc">Serves the static index page from the ./static directory using Go's built-in file server.</p>
+          </a>
+          <a class="endpoint-card" href="/form.html">
+            <div class="endpoint-header">
+              <span class="method-badge get">GET</span>
+              <span class="endpoint-path">/form.html</span>
+            </div>
+            <p class="endpoint-desc">Renders the HTML contact form with name, email, and address fields.</p>
+          </a>
+          <a class="endpoint-card" href="/hello">
+            <div class="endpoint-header">
+              <span class="method-badge get">GET</span>
+              <span class="endpoint-path">/hello</span>
+            </div>
+            <p class="endpoint-desc">A simple text endpoint demonstrating handler functions and method validation.</p>
+          </a>
+          <div class="endpoint-card">
+            <div class="endpoint-header">
+              <span class="method-badge post">POST</span>
+              <span class="endpoint-path">/form</span>
+            </div>
+            <p class="endpoint-desc">Accepts POST form submissions, validates fields, and returns a structured JSON response.</p>
+          </div>
+          <a class="endpoint-card" href="/api/health">
+            <div class="endpoint-header">
+              <span class="method-badge get">GET</span>
+              <span class="endpoint-path">/api/health</span>
+            </div>
+            <p class="endpoint-desc">Returns server status, uptime, and timestamp as JSON. Standard for load balancers.</p>
+          </a>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section id="features">
+        <div class="section-label">Architecture</div>
+        <h2 class="section-title">What's Inside</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-name">Zero Dependencies</div>
+            <p class="feature-desc">Built entirely on Go's standard library. No third-party frameworks, no bloat.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🪵</div>
+            <div class="feature-name">Logging Middleware</div>
+            <p class="feature-desc">Every request is logged with method, path, status code, and response duration.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <div class="feature-name">Secure Timeouts</div>
+            <p class="feature-desc">Configured read, write, and idle timeouts to protect against slow-client attacks.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <div class="feature-name">JSON API</div>
+            <p class="feature-desc">The /form and /api/health endpoints respond with structured JSON payloads.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📦</div>
+            <div class="feature-name">Go Modules</div>
+            <p class="feature-desc">Uses <code>go mod</code> — the modern standard for dependency management in Go.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <div class="feature-name">Deploy Ready</div>
+            <p class="feature-desc">PORT env var support. Compile with <code>go build</code> into a single binary for any platform.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      <span class="footer-text">Built with Go — net/http — no external dependencies</span>
+      <div id="health-status">
+        <div id="health-dot"></div>
+        <span id="health-label">Checking status...</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Live health check ping
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        document.getElementById('health-label').textContent = `Server OK · Uptime ${data.uptime}`;
+      } catch {
+        document.getElementById('health-dot').style.background = '#ff5f57';
+        document.getElementById('health-label').textContent = 'Server unreachable';
+      }
+    }
+    checkHealth();
+    setInterval(checkHealth, 10000);
+
+    // Blinking cursor in terminal
+    const cursor = document.getElementById('cursor');
+    setInterval(() => { cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0'; }, 500);
+  </script>
+</body>
+</html>
