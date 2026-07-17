@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact Form — Go Server</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: rgba(255,255,255,0.07);
+      --accent: #00e5a0;
+      --accent2: #7b61ff;
+      --text: #e8e8f0;
+      --muted: #666680;
+      --error: #ff5f57;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 500px; height: 500px; background: var(--accent2); top: -150px; left: -100px; }
+    .orb-2 { width: 400px; height: 400px; background: var(--accent); bottom: -100px; right: -100px; }
+
+    /* ── NAV ───────────── */
+    nav {
+      position: relative;
+      z-index: 10;
+      padding: 1.2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(10,10,15,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-back {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--text); }
+
+    /* ── MAIN LAYOUT ────── */
+    main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 3rem 2rem;
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 520px;
+      animation: slideUp 0.5s ease both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-header { margin-bottom: 2.5rem; }
+
+    .form-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .form-title {
+      font-family: var(--font-head);
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 0.75rem;
+    }
+
+    .form-subtitle {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── FORM ───────────── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+    }
+
+    .field {
+      margin-bottom: 1.4rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: rgba(0,229,160,0.4);
+      box-shadow: 0 0 0 3px rgba(0,229,160,0.07);
+    }
+
+    input::placeholder { color: var(--muted); opacity: 0.6; }
+
+    .field-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    .required { color: var(--accent); }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-head);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn:hover {
+      background: #00ffb3;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0,229,160,0.25);
+    }
+
+    .submit-btn:active { transform: translateY(0); }
+
+    /* ── RESPONSE PANEL ─── */
+    #response-panel {
+      display: none;
+      margin-top: 1.25rem;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      animation: slideUp 0.3s ease both;
+    }
+
+    .response-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .response-bar.success { background: rgba(0,229,160,0.1); color: var(--accent); border-bottom: 1px solid rgba(0,229,160,0.15); }
+    .response-bar.error   { background: rgba(255,95,87,0.1);  color: var(--error);  border-bottom: 1px solid rgba(255,95,87,0.15); }
+
+    .response-body {
+      background: #0c0c14;
+      padding: 1rem;
+      font-size: 0.78rem;
+      line-height: 1.8;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* ── INFO STRIP ─────── */
+    .info-strip {
+      margin-top: 1.25rem;
+      padding: 0.85rem 1rem;
+      background: rgba(123,97,255,0.06);
+      border: 1px solid rgba(123,97,255,0.15);
+      border-radius: 8px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .info-strip span { color: var(--accent2); }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <nav>
+    <a class="nav-logo" href="/">go/server</a>
+    <a class="nav-back" href="/">← Back to Home</a>
+  </nav>
+
+  <main>
+    <div class="form-container">
+      <div class="form-header">
+        <div class="form-eyebrow">POST /form</div>
+        <h1 class="form-title">Contact<br>Form.</h1>
+        <p class="form-subtitle">
+          Data is submitted via HTTP POST, parsed by Go's
+          <code>r.ParseForm()</code>, and returned as a JSON response.
+        </p>
+      </div>
+
+      <div class="form-card">
+        <form id="contact-form" method="POST" action="/form">
+          <div class="field">
+            <label>Name <span class="required">*</span></label>
+            <input type="text" name="name" placeholder="Your full name" required autocomplete="name" />
+          </div>
+
+          <div class="field">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" />
+            <div class="field-hint">Required — used for validation demo</div>
+          </div>
+
+          <div class="field">
+            <label>Address</label>
+            <input type="text" name="address" placeholder="123 Main St, City" autocomplete="street-address" />
+            <div class="field-hint">Optional</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <button type="button" class="submit-btn" onclick="submitForm()">
+            Submit via POST →
+          </button>
+        </form>
+
+        <div id="response-panel">
+          <div class="response-bar" id="response-bar">● Response</div>
+          <pre class="response-body" id="response-body"></pre>
+        </div>
+
+        <div class="info-strip">
+          <span>How it works:</span> This form POSTs to <code>/form</code> on the Go server.
+          The handler calls <code>r.ParseForm()</code>, extracts values with
+          <code>r.FormValue()</code>, and returns a JSON object.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function submitForm() {
+      const form = document.getElementById('contact-form');
+      const name = form.querySelector('[name="name"]').value.trim();
+      const email = form.querySelector('[name="email"]').value.trim();
+      const address = form.querySelector('[name="address"]').value.trim();
+
+      if (!name || !email) {
+        showResponse('error', '400 Bad Request', { error: 'Name and email are required fields.' });
+        return;
+      }
+
+      const body = new URLSearchParams({ name, email, address });
+
+      try {
+        const res = await fetch('/form', { method: 'POST', body });
+        const data = await res.json();
+
+        if (res.ok) {
+          showResponse('success', `${res.status} OK`, data);
+        } else {
+          showResponse('error', `${res.status} Error`, data);
+        }
+      } catch (err) {
+        showResponse('error', 'Network Error', { error: err.message });
+      }
+    }
+
+    function showResponse(type, label, data) {
+      const panel = document.getElementById('response-panel');
+      const bar = document.getElementById('response-bar');
+      const body = document.getElementById('response-body');
+
+      panel.style.display = 'block';
+      bar.className = `response-bar ${type}`;
+      bar.textContent = `● ${label}`;
+      body.textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
