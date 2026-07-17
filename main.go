@@ -76,7 +76,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 
 // form handler
 
-func formHandler(w http.ResponseHandler, r *http.Request) {
+func formHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Only POST is accepted on this endpoint."}`, http.StatusMethodNotAllowed)
 		return
