@@ -112,6 +112,7 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 // main
 
 func main() {
+	
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -138,7 +139,7 @@ func main() {
 
 	fmt.Printf("┌─────────────────────────────────────────┐\n")
 	fmt.Printf("│   Go Web Server                         │\n")
-	fmt.Printf("│   Listening on http://localhost:%s      │\n", port)
+	fmt.Printf("│   Listening on http://localhost:%s    │\n", port)
 	fmt.Printf("│                                         │\n")
 	fmt.Printf("│   Routes:                               │\n")
 	fmt.Printf("│   GET  /              → index.html      │\n")
