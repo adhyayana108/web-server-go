@@ -1,3 +1,12 @@
 # Compiled binary
 server
 
+#Environment variables
+.env
+*.env
+
+#Local IDE configurations
+.vscode/
+
+
+
